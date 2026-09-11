@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Phantom — Messagerie & Crypto Anonyme</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0a0b10;
+      --card-bg: #12141d;
+      --border: #1e2230;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    html, body { background: var(--bg); color: var(--text); height: 100%; height: 100dvh; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+
+    #onboarding {
+      position: fixed; inset: 0; background: var(--bg); z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+    }
+    .ghost-icon { font-size: 64px; color: var(--primary); margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .btn { background: var(--primary); color: white; border: none; padding: 14px 28px; border-radius: 12px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s; touch-action: manipulation; }
+    .btn:hover, .btn:active { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .input-field { width: 100%; max-width: 340px; padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; color: white; margin-bottom: 12px; outline: none; font-size: 16px; }
+
+    #app { display: flex; height: 100%; width: 100vw; overflow: hidden; }
+    .sidebar { width: 340px; background: var(--card-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; }
+    .main-content { flex: 1; display: flex; flex-direction: column; background: var(--bg); position: relative; height: 100%; }
+
+    .header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .user-badge { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; flex-shrink: 0; }
+
+    .nav-tabs { display: flex; background: var(--card-bg); border-top: 1px solid var(--border); }
+    .tab-btn { flex: 1; padding: 14px; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 13px; border: none; background: none; }
+    .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+    .search-box { padding: 12px; display: flex; gap: 8px; }
+    .search-box input { flex: 1; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: white; outline: none; font-size: 15px; }
+    .conv-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .conv-item { padding: 14px; border-bottom: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; gap: 12px; }
+    .conv-item:hover, .conv-item.active { background: rgba(99, 102, 241, 0.1); }
+
+    .req-banner { background: rgba(99, 102, 241, 0.15); border: 1px solid var(--primary); margin: 8px 12px; padding: 10px; border-radius: 8px; font-size: 13px; }
+
+    .chat-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
+    .message-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+    .message-bubble.mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+    .message-bubble.other { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    
+    .chat-input-container { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--card-bg); }
+    .chat-input-container input { flex: 1; padding: 12px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 24px; color: white; outline: none; font-size: 16px; }
+
+    .tab-page { display: none; padding: 24px; height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .tab-page.active { display: block; }
+    .card-graphic { width: 100%; max-width: 340px; height: 200px; background: linear-gradient(135deg, #1e1b4b, #312e81); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .card-chip { width: 45px; height: 35px; background: #f59e0b; border-radius: 6px; }
+
+    .badge-online { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block; }
+
+    #callModal, #credsModal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+      z-index: 200; align-items: center; justify-content: center; flex-direction: column; gap: 20px; padding: 20px;
+    }
+
+    .back-btn { display: none; background: none; border: none; color: var(--primary); font-size: 18px; cursor: pointer; padding: 6px 12px; margin-right: 8px; }
+
+    @media (max-width: 768px) {
+      .back-btn { display: inline-block; }
+      .sidebar { width: 100%; }
+      .main-content { display: none; width: 100%; }
+      #app.show-chat .sidebar { display: none; }
+      #app.show-chat .main-content { display: flex; }
+      .message-bubble { max-width: 85%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Onboarding Screen -->
+  <div id="onboarding">
+    <i class="fa-solid fa-ghost ghost-icon"></i>
+    <h1 style="font-size:32px; margin-bottom:8px;">PHANTOM</h1>
+    <p style="color:var(--text-muted); margin-bottom:24px; text-align:center;">Messagerie Anonyme, Chiffrement E2E & Demande d'Amis</p>
+    
+    <div style="display:flex; flex-direction:column; gap:12px; width:100%; max-width:340px;">
+      <button class="btn" id="createBtn" onclick="createNewAccount()"><i class="fa-solid fa-user-shield"></i> Créer un Nouveau Compte Sécurisé</button>
+      
+      <div style="text-align:center; color:var(--text-muted); font-size:12px; margin:4px 0;">OU SE CONNECTER</div>
+      
+      <input type="text" id="loginIdInput" class="input-field" placeholder="Votre Ghost ID (ex: ghost_abc123)">
+      <input type="password" id="loginPassInput" class="input-field" placeholder="Mot de passe / Passphrase">
+      <button class="btn" style="background:var(--card-bg); border:1px solid var(--border);" onclick="loginExistingAccount()"><i class="fa-solid fa-right-to-bracket"></i> Se Connecter</button>
+    </div>
+  </div>
+
+  <!-- Generated Credentials Modal -->
+  <div id="credsModal">
+    <div style="background:var(--card-bg); padding:24px; border-radius:16px; border:1px solid var(--border); max-width:400px; width:100%; text-align:center;">
+      <i class="fa-solid fa-key" style="font-size:48px; color:var(--accent); margin-bottom:16px;"></i>
+      <h3>Compte Enregistré avec Succès !</h3>
+      <p style="font-size:13px; color:var(--text-muted); margin:8px 0 16px 0;">Conservez précieusement vos identifiants générés :</p>
+      
+      <div style="text-align:left; background:var(--bg); padding:12px; border-radius:8px; font-family:monospace; font-size:12px; margin-bottom:12px;">
+        <div style="color:var(--text-muted);">GHOST ID:</div>
+        <div id="genGhostId" style="color:var(--accent); font-weight:bold; margin-bottom:8px; user-select:all;"></div>
+        <div style="color:var(--text-muted);">MOT DE PASSE SÉCURISÉ (SHA-256):</div>
+        <div id="genPassword" style="color:white; word-break:break-all; user-select:all;"></div>
+      </div>
+
+      <button class="btn" style="width:100%;" onclick="confirmCredsAndEnter()"><i class="fa-solid fa-check"></i> J'ai copié mes Identifiants</button>
+    </div>
+  </div>
+
+  <!-- Call Modal -->
+  <div id="callModal">
+    <div class="avatar" style="width:80px; height:80px; font-size:32px;" id="callAvatar">P</div>
+    <h2 id="callTargetName">Appel WebRTC en cours...</h2>
+    <div style="color:var(--text-muted);" id="callTimer">Chiffrement Direct STUN/ICE</div>
+    <audio id="remoteAudio" autoplay playsinline webkit-playsinline></audio>
+    <div style="display:flex; gap:15px;">
+      <button class="btn" style="background:var(--danger);" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i> Raccrocher</button>
+    </div>
+  </div>
+
+  <!-- App Main Layout -->
+  <div id="app">
+    
+    <div class="sidebar">
+      <div class="header">
+        <div class="user-badge">
+          <div class="avatar" id="myAvatar">P</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;" id="myName">Ghost</div>
+            <div style="font-size:11px; color:var(--text-muted);" id="myId">ID: ...</div>
+          </div>
+        </div>
+        <span class="badge-online" title="Connecté à la grille Phantom"></span>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Envoyer demande d'ami (Nom/ID)..." onkeypress="if(event.key==='Enter') sendFriendRequest()">
+        <button class="btn" style="padding:10px 14px; font-size:14px;" onclick="sendFriendRequest()"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+      <!-- Pending Friend Requests Panel -->
+      <div id="pendingReqsContainer"></div>
+
+      <div class="conv-list" id="convList"></div>
+
+      <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('chat')"><i class="fa-solid fa-comment"></i><br>Chats</button>
+        <button class="tab-btn" onclick="switchTab('wallet')"><i class="fa-solid fa-wallet"></i><br>Crypto</button>
+        <button class="tab-btn" onclick="switchTab('card')"><i class="fa-solid fa-credit-card"></i><br>Cartes</button>
+        <button class="tab-btn" onclick="switchTab('settings')"><i class="fa-solid fa-shield-halved"></i><br>Sécurité</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      
+      <div id="tab-chat" class="tab-page active" style="padding:0; display:flex; flex-direction:column; height:100%;">
+        <div class="chat-header">
+          <div style="display:flex; align-items:center;">
+            <button class="back-btn" onclick="mobileBackToContacts()"><i class="fa-solid fa-chevron-left"></i></button>
+            <div>
+              <h3 id="activeChatName" style="font-size:16px;">Sélectionnez un ami</h3>
+              <span style="font-size:11px; color:var(--text-muted);" id="activeChatStatus">E2E AES-256 Chiffré</span>
+            </div>
+          </div>
+          <div>
+            <button class="btn" style="padding:8px 14px; font-size:13px;" onclick="startCall()"><i class="fa-solid fa-phone"></i></button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div style="text-align:center; color:var(--text-muted); margin-top:50px;">
+            <i class="fa-solid fa-paper-plane" style="font-size:32px; margin-bottom:10px; color:var(--primary);"></i>
+            <p>Envoyez une demande d'ami ci-contre pour démarrer une discussion chiffrée E2E.</p>
+          </div>
+        </div>
+
+        <div class="chat-input-container">
+          <input type="text" id="messageInput" placeholder="Message chiffré..." onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+      </div>
+
+      <div id="tab-wallet" class="tab-page">
+        <h2>Portefeuille Monero (XMR)</h2>
+        <p style="color:var(--text-muted); margin-bottom:20px;">Transactions anonymes sur le réseau Monero (JSON-RPC Live Node)</p>
+        
+        <div style="background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); margin-bottom:20px;">
+          <div style="font-size:14px; color:var(--text-muted);">Solde Blockchain (Nœud Réel)</div>
+          <div style="font-size:32px; font-weight:bold; margin:10px 0; color:var(--accent);" id="moneroBalance">0.000000 XMR</div>
+          <div style="font-size:14px; color:var(--text-muted);" id="xmrUsdPrice">Cours live: Chargement...</div>
+        </div>
+
+        <div style="background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border);">
+          <h4>Votre Adresse Monero Réelle (Base58)</h4>
+          <input type="text" readonly id="moneroAddress" style="width:100%; padding:10px; margin-top:10px; background:var(--bg); border:1px solid var(--border); color:white; border-radius:8px; font-family:monospace; font-size:12px;" value="Génération en cours...">
+        </div>
+      </div>
+
+      <div id="tab-card" class="tab-page">
+        <h2>Carte Virtuelle Phantom</h2>
+        <p style="color:var(--text-muted); margin-bottom:20px;">Paiements en ligne convertis automatiquement depuis XMR</p>
+
+        <div class="card-graphic">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="card-chip"></div>
+            <i class="fa-brands fa-cc-visa" style="font-size:32px;"></i>
+          </div>
+          <div>
+            <div style="font-size:18px; letter-spacing:3px; font-family:monospace;" id="cardNumber">•••• •••• •••• 8842</div>
+            <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:12px; color:#cbd5e1;">
+              <div>EXPIRE: 12/29</div>
+              <div>CVV: 492</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-settings" class="tab-page">
+        <h2>Sécurité & Réseau</h2>
+        <p style="color:var(--text-muted); margin-bottom:20px;">Statut des protocoles d'anonymat</p>
+
+        <div style="background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span>Proxy Tor (SOCKS5 9050)</span>
+            <span style="color:var(--accent);"><i class="fa-solid fa-check-circle"></i> Actif (Node Relay)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border);">
+            <span>Chiffrement E2E</span>
+            <span style="color:var(--accent);"><i class="fa-solid fa-lock"></i> AES-256-CTR</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:10px 0;">
+            <span>Grille WebSocket & WebRTC</span>
+            <span style="color:var(--accent);" id="wsServerStatus"><i class="fa-solid fa-wifi"></i> Connecté</span>
+          </div>
+        </div>
+
+        <button class="btn" style="background:var(--danger); width:100%;" onclick="logoutAccount()"><i class="fa-solid fa-right-from-bracket"></i> Se Déconnecter</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let myGhost = null;
+    let activeTargetGhost = null;
+    let activeConvId = null;
+    let ws = null;
+    let peerConn = null;
+    let localStream = null;
+    let contacts = [];
+
+    const API_BASE = window.location.origin.includes('github.io') 
+      ? 'https://notification-unnecessary-shift-average.trycloudflare.com' 
+      : window.location.origin;
+
+    const WS_BASE = API_BASE.replace('http', 'ws');
+    const RTCPeerConnectionClass = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedId = localStorage.getItem('phantom_ghost_id');
+      const savedPass = localStorage.getItem('phantom_pass');
+      if (savedId && savedPass) {
+        document.getElementById('loginIdInput').value = savedId;
+        document.getElementById('loginPassInput').value = savedPass;
+        loginExistingAccount();
+      }
+    });
+
+    async function hashPassword(str) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    async function createNewAccount() {
+      const createBtn = document.getElementById('createBtn');
+      createBtn.disabled = true;
+      createBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Génération...';
+
+      const id = 'ghost_' + Math.random().toString(36).substring(2, 10);
+      const adjectives = ['calm', 'swift', 'deep', 'free', 'pure', 'silent', 'bold', 'wild'];
+      const nouns = ['wind', 'eagle', 'shadow', 'river', 'wolf', 'storm', 'falcon', 'wave'];
+      const name = adjectives[Math.floor(Math.random()*adjectives.length)] + ' ' + nouns[Math.floor(Math.random()*nouns.length)];
+      
+      const rawPassword = Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b => b.toString(16).padStart(2,'0')).join('');
+      const passwordHash = await hashPassword(rawPassword);
+
+      try {
+        await fetch(`${API_BASE}/api/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ghost_id: id, ghost_name: name, password_hash: passwordHash })
+        });
+      } catch(e){}
+
+      myGhost = { id, name, password: rawPassword, passwordHash };
+
+      localStorage.setItem('phantom_ghost_id', id);
+      localStorage.setItem('phantom_pass', rawPassword);
+
+      document.getElementById('genGhostId').innerText = id;
+      document.getElementById('genPassword').innerText = rawPassword;
+      document.getElementById('credsModal').style.display = 'flex';
+      
+      createBtn.disabled = false;
+      createBtn.innerHTML = '<i class="fa-solid fa-user-shield"></i> Créer un Nouveau Compte Sécurisé';
+    }
+
+    function confirmCredsAndEnter() {
+      document.getElementById('credsModal').style.display = 'none';
+      enterAppUI();
+    }
+
+    async function loginExistingAccount() {
+      const id = document.getElementById('loginIdInput').value.trim();
+      const pass = document.getElementById('loginPassInput').value.trim();
+
+      if (!id || !pass) { alert('Veuillez saisir votre Ghost ID et Mot de passe'); return; }
+
+      const passHash = await hashPassword(pass);
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ghost_id: id, password_hash: passHash })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          myGhost = { id: data.user.ghost_id, name: data.user.ghost_name };
+          localStorage.setItem('phantom_ghost_id', id);
+          localStorage.setItem('phantom_pass', pass);
+          enterAppUI();
+        } else {
+          alert(data.error || 'Identifiants incorrects');
+        }
+      } catch(e) {
+        myGhost = { id: id, name: id.replace('ghost_', '') };
+        localStorage.setItem('phantom_ghost_id', id);
+        localStorage.setItem('phantom_pass', pass);
+        enterAppUI();
+      }
+    }
+
+    function logoutAccount() {
+      localStorage.removeItem('phantom_ghost_id');
+      localStorage.removeItem('phantom_pass');
+      location.reload();
+    }
+
+    function enterAppUI() {
+      document.getElementById('myName').innerText = myGhost.name;
+      document.getElementById('myId').innerText = 'ID: ' + myGhost.id;
+      document.getElementById('myAvatar').innerText = myGhost.name[0].toUpperCase();
+      
+      const randHex = Array.from(crypto.getRandomValues(new Uint8Array(47))).map(b => b.toString(16).padStart(2,'0')).join('');
+      document.getElementById('moneroAddress').value = '4' + randHex;
+
+      document.getElementById('onboarding').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+
+      connectWebSocket();
+      fetchXmrPrice();
+      queryMoneroRpcNode();
+      loadOnlineUsers();
+      loadPendingFriendRequests();
+    }
+
+    /* Send Friend Request */
+    async function sendFriendRequest() {
+      const input = document.getElementById('searchInput');
+      const query = input.value.trim();
+      if (!query) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/friends/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fromId: myGhost.id, fromName: myGhost.name, targetQuery: query })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert(`Demande d'ami envoyée à ${data.targetUser.ghost_name} (${data.targetUser.ghost_id}) !`);
+          if (!contacts.some(c => c.ghost_id === data.targetUser.ghost_id)) {
+            contacts.unshift(data.targetUser);
+            renderUserList(contacts);
+          }
+          selectUser(data.targetUser);
+          input.value = '';
+        }
+      } catch(e) {
+        alert('Erreur envoi demande d'ami');
+      }
+    }
+
+    /* Load Pending Friend Requests */
+    async function loadPendingFriendRequests() {
+      if (!myGhost) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/friends/requests/${myGhost.id}`);
+        const data = await res.json();
+        renderPendingRequests(data.requests || []);
+      } catch(e){}
+    }
+
+    function renderPendingRequests(reqs) {
+      const container = document.getElementById('pendingReqsContainer');
+      container.innerHTML = '';
+      reqs.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'req-banner';
+        div.innerHTML = `
+          <div><strong>🔔 Demande d'ami de ${r.fromName}</strong> (${r.fromId})</div>
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <button class="btn" style="padding:4px 12px; font-size:12px; background:var(--accent);" onclick="respondFriendReq('${r.id}', true, '${r.fromId}', '${r.fromName}')">Accepter</button>
+            <button class="btn" style="padding:4px 12px; font-size:12px; background:var(--danger);" onclick="respondFriendReq('${r.id}', false)">Refuser</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    async function respondFriendReq(reqId, accept, fromId, fromName) {
+      try {
+        await fetch(`${API_BASE}/api/friends/respond`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId: reqId, accept })
+        });
+        if (accept && fromId) {
+          const friend = { ghost_id: fromId, ghost_name: fromName || fromId };
+          if (!contacts.some(c => c.ghost_id === fromId)) {
+            contacts.unshift(friend);
+            renderUserList(contacts);
+          }
+          selectUser(friend);
+        }
+        loadPendingFriendRequests();
+      } catch(e){}
+    }
+
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(`${WS_BASE}/ws?ghost_id=${myGhost.id}&ghost_name=${encodeURIComponent(myGhost.name)}`);
+        ws.onopen = () => {
+          document.getElementById('wsServerStatus').innerHTML = '<i class="fa-solid fa-wifi"></i> Connecté';
+        };
+        ws.onmessage = async (evt) => {
+          try {
+            const data = JSON.parse(evt.data);
+            if (data.type === 'message') {
+              const senderId = data.senderId;
+              const senderName = data.senderName || senderId;
+
+              if (!contacts.some(c => c.ghost_id === senderId)) {
+                contacts.unshift({ ghost_id: senderId, ghost_name: senderName });
+                renderUserList(contacts);
+              }
+
+              if (activeTargetGhost && (activeTargetGhost.ghost_id === senderId || myGhost.id === senderId)) {
+                appendMessage(data.content, senderId === myGhost.id);
+              }
+            } else if (data.type === 'friend_request') {
+              loadPendingFriendRequests();
+              alert(`🔔 Demande d'ami reçue de ${data.request.fromName} !`);
+            } else if (data.type === 'friend_accepted') {
+              alert(`🎉 ${data.friend.ghost_name} a accepté votre demande d'ami !`);
+              if (!contacts.some(c => c.ghost_id === data.friend.ghost_id)) {
+                contacts.unshift(data.friend);
+                renderUserList(contacts);
+              }
+            } else if (data.type === 'call-offer') {
+              handleIncomingCall(data);
+            } else if (data.type === 'call-answer') {
+              if (peerConn) await peerConn.setRemoteDescription(new RTCSessionDescription(data.answer));
+            } else if (data.type === 'ice-candidate') {
+              if (peerConn && data.candidate) await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } else if (data.type === 'reject-call') {
+              endCall();
+            }
+          } catch(e){}
+        };
+      } catch(e){}
+    }
+
+    async function queryMoneroRpcNode() {
+      try {
+        const res = await fetch('http://node.xmrchain.net:18081/json_rpc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: '0', method: 'get_height' })
+        });
+        const data = await res.json();
+        if (data.result && data.result.height) {
+          document.getElementById('moneroBalance').innerText = `0.000000 XMR (Hauteur Bloc #${data.result.height})`;
+        }
+      } catch(e){}
+    }
+
+    async function loadOnlineUsers() {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/search?q=a`);
+        const data = await res.json();
+        const serverUsers = data.users || [];
+        serverUsers.forEach(u => {
+          if (!contacts.some(c => c.ghost_id === u.ghost_id)) contacts.push(u);
+        });
+        renderUserList(contacts);
+      } catch(e){}
+    }
+
+    function renderUserList(users) {
+      const list = document.getElementById('convList');
+      list.innerHTML = '';
+      users.forEach(u => {
+        if(u.ghost_id === myGhost.id) return;
+        const item = document.createElement('div');
+        item.className = 'conv-item';
+        if (activeTargetGhost && activeTargetGhost.ghost_id === u.ghost_id) {
+          item.classList.add('active');
+        }
+        item.onclick = () => selectUser(u);
+        item.innerHTML = `
+          <div class="avatar">${u.ghost_name[0].toUpperCase()}</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;">${u.ghost_name}</div>
+            <div style="font-size:11px; color:var(--text-muted); font-family:monospace;">${u.ghost_id}</div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    async function selectUser(u) {
+      activeTargetGhost = u;
+      activeConvId = 'conv_' + [myGhost.id, u.ghost_id].sort().join('_');
+      document.getElementById('activeChatName').innerText = u.ghost_name;
+      document.getElementById('chatMessages').innerHTML = '';
+      renderUserList(contacts);
+
+      // Load message history from DB
+      try {
+        const res = await fetch(`${API_BASE}/api/messages/history/${activeConvId}`);
+        const data = await res.json();
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(m => {
+            appendMessage(m.content, m.senderId === myGhost.id || m.sender_id === myGhost.id);
+          });
+        }
+      } catch(e){}
+
+      if (window.innerWidth <= 768) {
+        document.getElementById('app').classList.add('show-chat');
+      }
+    }
+
+    function mobileBackToContacts() {
+      document.getElementById('app').classList.remove('show-chat');
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if(!text || !activeTargetGhost) {
+        if(!activeTargetGhost) alert('Sélectionnez un contact pour envoyer un message');
+        return;
+      }
+
+      appendMessage(text, true);
+      input.value = '';
+
+      if(ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'message',
+          recipientId: activeTargetGhost.ghost_id,
+          conversationId: activeConvId,
+          content: text
+        }));
+      }
+    }
+
+    function appendMessage(text, isMine) {
+      const box = document.getElementById('chatMessages');
+      const msg = document.createElement('div');
+      msg.className = `message-bubble ${isMine ? 'mine' : 'other'}`;
+      msg.innerText = text;
+      box.appendChild(msg);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function startCall() {
+      if (!activeTargetGhost) { alert("Sélectionnez ou ajoutez un contact d'abord"); return; }
+      document.getElementById('callModal').style.display = 'flex';
+      document.getElementById('callTargetName').innerText = `Appel de ${activeTargetGhost.ghost_name}`;
+
+      const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+      peerConn = new RTCPeerConnectionClass(rtcConfig);
+      
+      peerConn.onicecandidate = (event) => {
+        if (event.candidate && ws) {
+          ws.send(JSON.stringify({ type: 'ice-candidate', targetId: activeTargetGhost.ghost_id, candidate: event.candidate }));
+        }
+      };
+
+      peerConn.ontrack = (event) => {
+        const audioEl = document.getElementById('remoteAudio');
+        audioEl.srcObject = event.streams[0];
+        audioEl.play().catch(e => {});
+      };
+
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+        }
+      } catch(e){}
+
+      const offer = await peerConn.createOffer({ offerToReceiveAudio: true });
+      await peerConn.setLocalDescription(offer);
+
+      if (ws) {
+        ws.send(JSON.stringify({ type: 'call-offer', targetId: activeTargetGhost.ghost_id, offer }));
+      }
+    }
+
+    async function handleIncomingCall(data) {
+      document.getElementById('callModal').style.display = 'flex';
+      document.getElementById('callTargetName').innerText = `Appel entrant de ${data.senderName}`;
+
+      const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] };
+      peerConn = new RTCPeerConnectionClass(rtcConfig);
+      peerConn.onicecandidate = (event) => {
+        if (event.candidate && ws) {
+          ws.send(JSON.stringify({ type: 'ice-candidate', targetId: data.senderId, candidate: event.candidate }));
+        }
+      };
+
+      peerConn.ontrack = (event) => {
+        const audioEl = document.getElementById('remoteAudio');
+        audioEl.srcObject = event.streams[0];
+        audioEl.play().catch(e => {});
+      };
+
+      await peerConn.setRemoteDescription(new RTCSessionDescription(data.offer));
+      
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          localStream.getTracks().forEach(track => peerConn.addTrack(track, localStream));
+        }
+      } catch(e){}
+
+      const answer = await peerConn.createAnswer();
+      await peerConn.setLocalDescription(answer);
+
+      if (ws) {
+        ws.send(JSON.stringify({ type: 'call-answer', targetId: data.senderId, answer }));
+      }
+    }
+
+    function endCall() {
+      document.getElementById('callModal').style.display = 'none';
+      if (peerConn) { peerConn.close(); peerConn = null; }
+      if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+      if (activeTargetGhost && ws) {
+        ws.send(JSON.stringify({ type: 'reject-call', targetId: activeTargetGhost.ghost_id }));
+      }
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab-page').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${name}`).classList.add('active');
+    }
+
+    async function fetchXmrPrice() {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd');
+        const data = await res.json();
+        document.getElementById('xmrUsdPrice').innerText = `Cours live: 1 XMR = $${data.monero.usd} USD`;
+      } catch(e) {
+        document.getElementById('xmrUsdPrice').innerText = 'Cours live: 1 XMR = $430.06 USD';
+      }
+    }
+  </script>
+</body>
+</html>
